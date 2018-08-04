@@ -78,13 +78,16 @@ describe("Rect", () => {
     assert.deepEqual(r.contract(2), r2);
   });
 
-  it("inside", () => {
+  it("has", () => {
     const r = new Rect(new Coord(1, 2), new Size(3, 4));
-    assert.isTrue(r.inside(new Coord(1, 2)));
-    assert.isFalse(r.inside(new Coord(0, 2)));
-    assert.isFalse(r.inside(new Coord(4, 2)));
-    assert.isFalse(r.inside(new Coord(2, 1)));
-    assert.isFalse(r.inside(new Coord(2, 6)));
+    assert.isTrue(r.has(new Coord(1, 2)));
+    assert.isTrue(r.has(new Coord(1, 4)));
+    assert.isTrue(r.has(new Coord(3, 2)));
+    assert.isTrue(r.has(new Coord(3, 4)));
+    assert.isFalse(r.has(new Coord(0, 2)));
+    assert.isFalse(r.has(new Coord(4, 2)));
+    assert.isFalse(r.has(new Coord(2, 1)));
+    assert.isFalse(r.has(new Coord(2, 6)));
   });
 
   it("is over lap", () => {
@@ -100,5 +103,39 @@ describe("Rect", () => {
     assert.isTrue(r.isOverlap(new Rect(new Coord(7, 1), size)));
     assert.isTrue(r.isOverlap(new Rect(new Coord(1, 7), size)));
     assert.isTrue(r.isOverlap(new Rect(new Coord(7, 7), size)));
+    assert.isTrue(r.isOverlap(new Rect(new Coord(4, 5), new Size(5, 3))));
+  });
+
+  it("frame", () => {
+    const r = new Rect(new Coord(2, 3), new Size(3, 3));
+    const expected = [
+      new Coord(2, 3),
+      new Coord(3, 3),
+      new Coord(4, 3),
+      new Coord(2, 4),
+      new Coord(2, 5),
+      new Coord(4, 4),
+      new Coord(4, 5),
+      new Coord(3, 5)
+    ];
+    assert.deepEqual(r.frame, expected);
+  });
+
+  it("iterate", () => {
+    const result = [];
+    for (const c of new Rect(new Coord(2, 3), new Size(3, 3))) {
+      result.push(c);
+    }
+    assert.deepEqual(result, [
+      new Coord(2, 3),
+      new Coord(3, 3),
+      new Coord(4, 3),
+      new Coord(2, 4),
+      new Coord(3, 4),
+      new Coord(4, 4),
+      new Coord(2, 5),
+      new Coord(3, 5),
+      new Coord(4, 5)
+    ]);
   });
 });

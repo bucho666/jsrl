@@ -10,7 +10,15 @@ class Matrix {
   }
 
   get size() {
-    return new Size(this._map[0].length, this._map.length);
+    return new Size(this.width, this.height);
+  }
+
+  get height() {
+    return this._map.length;
+  }
+
+  get width() {
+    return this._map[0].length;
   }
 
   at(coord) {
@@ -30,7 +38,7 @@ class Matrix {
   }
 
   fill(value) {
-    this.forEach((coord)=>{
+    this.forEach(coord => {
       this.put(coord, value);
     });
   }
@@ -42,6 +50,15 @@ class Matrix {
         f(coord, this.at(coord));
       }
     }
+  }
+
+  isEdge(coord) {
+    return (
+      coord.x === 0 ||
+      coord.x === this.width - 1 ||
+      coord.y === 0 ||
+      coord.y === this.height - 1
+    );
   }
 }
 

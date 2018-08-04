@@ -5,7 +5,7 @@ class Random {
 }
 
 Array.prototype.randomChoice = function() {
-  return this[Random.number(0, this.length)];
+  return this[Random.number(0, this.length - 1)];
 };
 
 module.exports = Random;

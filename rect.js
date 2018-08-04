@@ -97,7 +97,7 @@ class Rect {
     return this.expand(-value);
   }
 
-  inside(coord) {
+  has(coord) {
     return (
       this.x <= coord.x &&
       coord.x <= this.right &&
@@ -108,11 +108,34 @@ class Rect {
 
   isOverlap(rect) {
     return (
-      this.inside(rect.bottomRight) ||
-      this.inside(rect.bottomLeft) ||
-      this.inside(rect.topRight) ||
-      this.inside(rect.topLeft)
+      this.has(rect.bottomRight) ||
+      this.has(rect.bottomLeft) ||
+      this.has(rect.topRight) ||
+      this.has(rect.topLeft) ||
+      (rect.has(this.bottomRight) ||
+        rect.has(this.bottomLeft) ||
+        rect.has(this.topRight) ||
+        rect.has(this.topLeft))
     );
+  }
+
+  get frame() {
+    return [
+      ...new Set([
+        ...this.topSide,
+        ...this.leftSide,
+        ...this.rightSide,
+        ...this.bottomSide
+      ])
+    ];
+  }
+
+  *[Symbol.iterator]() {
+    for (let y = this.y; y <= this.bottom; y++) {
+      for (let x = this.x; x <= this.right; x++) {
+        yield new Coord(x, y);
+      }
+    }
   }
 }
 

@@ -12,4 +12,10 @@ describe("size", () => {
     const b = new Size(3, 4);
     assert.deepEqual(a.plus(b), new Size(4, 6));
   });
+
+  it("equal", () => {
+    const s = new Size(1, 2);
+    assert.isTrue(s.equal(new Size(1, 2)));
+    assert.isFalse(s.equal(new Size(1, 1)));
+  });
 });

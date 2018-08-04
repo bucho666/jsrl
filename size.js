@@ -14,6 +14,10 @@ class Size {
   plus(other) {
     return new Size(this.width + other.width, this.height + other.height);
   }
+
+  equal(other) {
+    return this._width === other.width && this._height === other.height;
+  }
 }
 
 module.exports = Size;
