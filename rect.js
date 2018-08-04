@@ -97,7 +97,7 @@ class Rect {
     return this.expand(-value);
   }
 
-  has(coord) {
+  inbound(coord) {
     return (
       this.x <= coord.x &&
       coord.x <= this.right &&
@@ -108,14 +108,14 @@ class Rect {
 
   isOverlap(rect) {
     return (
-      this.has(rect.bottomRight) ||
-      this.has(rect.bottomLeft) ||
-      this.has(rect.topRight) ||
-      this.has(rect.topLeft) ||
-      (rect.has(this.bottomRight) ||
-        rect.has(this.bottomLeft) ||
-        rect.has(this.topRight) ||
-        rect.has(this.topLeft))
+      this.inbound(rect.bottomRight) ||
+      this.inbound(rect.bottomLeft) ||
+      this.inbound(rect.topRight) ||
+      this.inbound(rect.topLeft) ||
+      (rect.inbound(this.bottomRight) ||
+        rect.inbound(this.bottomLeft) ||
+        rect.inbound(this.topRight) ||
+        rect.inbound(this.topLeft))
     );
   }
 

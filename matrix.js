@@ -60,6 +60,15 @@ class Matrix {
       coord.y === this.height - 1
     );
   }
+
+  inbound(coord) {
+    return (
+      coord.x >= 0 &&
+      coord.y >= 0 &&
+      coord.x < this.width &&
+      coord.y < this.height
+    );
+  }
 }
 
 module.exports = Matrix;

@@ -8,7 +8,8 @@ const Direction = {
   NE: new Coord(1, -1),
   NW: new Coord(-1, -1),
   SE: new Coord(1, 1),
-  SW: new Coord(-1, 1)
+  SW: new Coord(-1, 1),
+  CROSS: [new Coord(0, -1), new Coord(1, 0), new Coord(0, 1), new Coord(-1, 0)]
 };
 
 module.exports = Direction;

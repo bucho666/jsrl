@@ -78,16 +78,16 @@ describe("Rect", () => {
     assert.deepEqual(r.contract(2), r2);
   });
 
-  it("has", () => {
+  it("inbound", () => {
     const r = new Rect(new Coord(1, 2), new Size(3, 4));
-    assert.isTrue(r.has(new Coord(1, 2)));
-    assert.isTrue(r.has(new Coord(1, 4)));
-    assert.isTrue(r.has(new Coord(3, 2)));
-    assert.isTrue(r.has(new Coord(3, 4)));
-    assert.isFalse(r.has(new Coord(0, 2)));
-    assert.isFalse(r.has(new Coord(4, 2)));
-    assert.isFalse(r.has(new Coord(2, 1)));
-    assert.isFalse(r.has(new Coord(2, 6)));
+    assert.isTrue(r.inbound(new Coord(1, 2)));
+    assert.isTrue(r.inbound(new Coord(1, 4)));
+    assert.isTrue(r.inbound(new Coord(3, 2)));
+    assert.isTrue(r.inbound(new Coord(3, 4)));
+    assert.isFalse(r.inbound(new Coord(0, 2)));
+    assert.isFalse(r.inbound(new Coord(4, 2)));
+    assert.isFalse(r.inbound(new Coord(2, 1)));
+    assert.isFalse(r.inbound(new Coord(2, 6)));
   });
 
   it("is over lap", () => {

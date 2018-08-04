@@ -5,11 +5,12 @@ const Rect = require("./rect.js");
 const Random = require("./random.js");
 const Direction = require("./direction.js");
 
-const CellFlag = {
+const CellType = {
   NO_FLAG: Symbol(),
   ROOM: Symbol(),
   ROOM_WALL: Symbol(),
-  EXIT: Symbol()
+  EXIT: Symbol(),
+  CORRIDOR: Symbol()
 };
 
 class Room extends Rect {
@@ -19,10 +20,10 @@ class Room extends Rect {
 
   render(map) {
     for (const c of this.inside) {
-      map.put(c, CellFlag.ROOM);
+      map.put(c, CellType.ROOM);
     }
     for (const c of this.frame) {
-      map.put(c, CellFlag.ROOM_WALL);
+      map.put(c, CellType.ROOM_WALL);
     }
   }
 
@@ -57,7 +58,36 @@ class Generator {
     this.initialize();
     this.create_room();
     this.create_exits();
+    this.create_corridor();
     this.render();
+  }
+
+  create_corridor() {
+    this._map.forEach(coord => {
+      if (coord.x % 2 && coord.y % 2) {
+        this.dig_corridor(coord);
+      }
+    });
+  }
+
+  dig_corridor(coord) {
+    if (
+      this._map.at(coord) !== CellType.NO_FLAG &&
+      this._map.at(coord) !== CellType.ROOM
+    ) {
+      return;
+    }
+    this._map.put(coord, CellType.CORRIDOR);
+    for (const dir of Direction.CROSS.shuffle()) {
+      const step2 = coord.plus(dir).plus(dir);
+      if (
+        this._map.inbound(step2) &&
+        this._map.at(step2) === CellType.NO_FLAG
+      ) {
+        this._map.put(coord.plus(dir), CellType.CORRIDOR);
+        this.dig_corridor(step2);
+      }
+    }
   }
 
   create_exits() {
@@ -66,7 +96,7 @@ class Generator {
         return !this._map.isEdge(coord);
       });
       for (let c = 0; c <= room.random_exit_number; c++) {
-        this._map.put(exits.randomChoice(), CellFlag.EXIT);
+        this._map.put(exits.randomChoice(), CellType.EXIT);
       }
     }
   }
@@ -90,19 +120,10 @@ class Generator {
       }
     }
     return (
-      this.has(room.topLeft) &&
-      this.has(room.topRight) &&
-      this.has(room.bottomLeft) &&
-      this.has(room.bottomRight)
-    );
-  }
-
-  has(coord) {
-    return (
-      coord.x >= 0 &&
-      coord.y >= 0 &&
-      coord.x < this._map.width &&
-      coord.y < this._map.height
+      this._map.inbound(room.topLeft) &&
+      this._map.inbound(room.topRight) &&
+      this._map.inbound(room.bottomLeft) &&
+      this._map.inbound(room.bottomRight)
     );
   }
 
@@ -119,20 +140,21 @@ class Generator {
   get room_number() {
     const map_area = this._map.height * this._map.width;
     const room_area_max = 45;
-    return Math.floor(map_area / room_area_max);
+    return Math.floor((map_area / room_area_max) * 2);
   }
 
   initialize() {
-    this._map.fill(CellFlag.NO_FLAG);
+    this._map.fill(CellType.NO_FLAG);
   }
 
   render() {
     let line = "";
     const symbol = new Map([
-      [CellFlag.NO_FLAG, "_"],
-      [CellFlag.ROOM, "."],
-      [CellFlag.ROOM_WALL, "#"],
-      [CellFlag.EXIT, "+"]
+      [CellType.NO_FLAG, "#"],
+      [CellType.ROOM, "."],
+      [CellType.ROOM_WALL, "#"],
+      [CellType.EXIT, "+"],
+      [CellType.CORRIDOR, "."]
     ]);
     this._map.forEach((coord, cell) => {
       line += symbol.get(cell);

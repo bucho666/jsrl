@@ -70,4 +70,14 @@ describe("Matrix", () => {
     assert.isTrue(m.isEdge(new Coord(1, 2)));
     assert.isTrue(m.isEdge(new Coord(2, 2)));
   });
+
+  it("inbound", () => {
+    const m = new Matrix(new Size(2, 3));
+    assert.isFalse(m.inbound(new Coord(-1, 0)));
+    assert.isFalse(m.inbound(new Coord(0, -1)));
+    assert.isTrue(m.inbound(new Coord(0, 0)));
+    assert.isTrue(m.inbound(new Coord(1, 2)));
+    assert.isFalse(m.inbound(new Coord(2, 2)));
+    assert.isFalse(m.inbound(new Coord(1, 3)));
+  });
 });
