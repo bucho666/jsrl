@@ -5,8 +5,8 @@ const Rect = require("./rect.js");
 const Random = require("./random.js");
 const Direction = require("./direction.js");
 
-const CellFlag = {
-  NO_FLAG: 1 << 0,
+const CellType = {
+  WALL: 1 << 0,
   ROOM: 1 << 1,
   ROOM_WALL: 1 << 2,
   EXIT: 1 << 3,
@@ -14,21 +14,21 @@ const CellFlag = {
   STAIR_UP: 1 << 5,
   STAIR_DOWN: 1 << 6
 };
-CellFlag.STAIR = CellFlag.STAIR_DOWN | CellFlag.STAIR_UP;
-CellFlag.OPEN =
-  CellFlag.ROOM | CellFlag.EXIT | CellFlag.CORRIDOR | CellFlag.STAIR;
+CellType.STAIR = CellType.STAIR_DOWN | CellType.STAIR_UP;
+CellType.OPEN =
+  CellType.ROOM | CellType.EXIT | CellType.CORRIDOR | CellType.STAIR;
 
 class Room extends Rect {
   constructor(coord, size) {
     super(coord, size);
   }
 
-  render(map) {
+  put(map) {
     for (const c of this.inside) {
-      map.put(c, CellFlag.ROOM);
+      map.put(c, CellType.ROOM);
     }
     for (const c of this.frame) {
-      map.put(c, CellFlag.ROOM_WALL);
+      map.put(c, CellType.ROOM_WALL);
     }
   }
 
@@ -53,15 +53,14 @@ class Room extends Rect {
 }
 
 class Generator {
-  constructor() {
-    this._map = new Matrix(new Size(79, 21));
+  constructor(size, config = { rooms: 64, remove_deadends: 50 }) {
+    this._map = new Matrix(size);
     this._rooms = [];
-    this._exits = [];
     this._deadends = [];
-    this._remove_deadends = 50;
+    this._config = config;
   }
 
-  run() {
+  generate() {
     this.initialize();
     this.createRooms();
     this.createExits();
@@ -69,37 +68,45 @@ class Generator {
     this.updateDeadends();
     this.createStair();
     this.closeDeadends();
-    this.render();
+    return this;
+  }
+
+  forEach(f) {
+    this._map.forEach(f);
+  }
+
+  get rooms() {
+    return [...this.rooms];
   }
 
   closeDeadends() {
     for (const deadend of this._deadends) {
-      this.closeDeadend(deadend);
+      if (Random.percentage(this._config.remove_deadends)) {
+        this.closeDeadend(deadend);
+      }
     }
   }
 
   closeDeadend(coord) {
-    if (this._map.at(coord) & CellFlag.STAIR) {
+    if (this._map.at(coord) & CellType.STAIR) {
       return;
     }
     const sides = this.openSide(coord);
     if (sides.length !== 1) {
       return;
     }
-    if (Random.percentage(this._remove_deadends)) {
-      this._map.put(coord, CellFlag.NO_FLAG);
-      this.closeDeadend(sides[0]);
-    }
+    this._map.put(coord, CellType.WALL);
+    this.closeDeadend(sides[0]);
   }
 
   createStair() {
-    this._map.put(this._deadends.randomPop(), CellFlag.STAIR_UP);
-    this._map.put(this._deadends.randomPop(), CellFlag.STAIR_DOWN);
+    this._map.put(this._deadends.randomPop(), CellType.STAIR_UP);
+    this._map.put(this._deadends.randomPop(), CellType.STAIR_DOWN);
   }
 
   updateDeadends() {
     this.forEachOddCoords(coord => {
-      if (this._map.at(coord) !== CellFlag.CORRIDOR) {
+      if (this._map.at(coord) !== CellType.CORRIDOR) {
         return;
       }
       const sides = this.openSide(coord);
@@ -113,7 +120,7 @@ class Generator {
     let sides = [];
     for (const dir of Direction.CROSS) {
       const side = coord.plus(dir);
-      if (this._map.at(side) & CellFlag.OPEN) {
+      if (this._map.at(side) & CellType.OPEN) {
         sides.push(side);
       }
     }
@@ -139,17 +146,16 @@ class Generator {
   }
 
   digCorridor(coord) {
-    if (!this._map.at(coord) && CellFlag.NO_FLAG | CellFlag.ROOM) {
+    if (!this._map.at(coord) && CellType.WALL | CellType.ROOM) {
       return;
     }
-    this._map.put(coord, CellFlag.CORRIDOR);
+    if (this._map.at(coord) === CellType.WALL) {
+      this._map.put(coord, CellType.CORRIDOR);
+    }
     for (const dir of Direction.CROSS.shuffle()) {
       const step2 = coord.plus(dir).plus(dir);
-      if (
-        this._map.inbound(step2) &&
-        this._map.at(step2) === CellFlag.NO_FLAG
-      ) {
-        this._map.put(coord.plus(dir), CellFlag.CORRIDOR);
+      if (this._map.inbound(step2) && this._map.at(step2) === CellType.WALL) {
+        this._map.put(coord.plus(dir), CellType.CORRIDOR);
         this.digCorridor(step2);
       }
     }
@@ -161,20 +167,21 @@ class Generator {
         return !this._map.isEdge(coord);
       });
       for (let c = 0; c <= room.randomExitNumber; c++) {
-        this._map.put(exits.randomChoice(), CellFlag.EXIT);
+        const coord = exits.randomChoice();
+        this._map.put(coord, CellType.EXIT);
       }
     }
   }
 
   createRooms() {
-    for (let c = 0; c < this.roomNumber; c++) {
+    for (let c = 0; c < this._config.rooms; c++) {
       const room = new Room(this.randomRoomCoord(), this.randomRoomSize());
       if (this.valiableRoom(room)) {
         this._rooms.push(room);
       }
     }
     for (const room of this._rooms) {
-      room.render(this._map);
+      room.put(this._map);
     }
   }
 
@@ -202,26 +209,20 @@ class Generator {
     return new Size(Random.number(2, 9) * 2 + 1, Random.number(2, 3) * 2 + 1);
   }
 
-  get roomNumber() {
-    const map_area = this._map.height * this._map.width;
-    const room_area_max = 45;
-    return Math.floor((map_area / room_area_max) * 2);
-  }
-
   initialize() {
-    this._map.fill(CellFlag.NO_FLAG);
+    this._map.fill(CellType.WALL);
   }
 
   render() {
     let line = "";
     const symbol = new Map([
-      [CellFlag.NO_FLAG, "#"],
-      [CellFlag.ROOM, "."],
-      [CellFlag.ROOM_WALL, "#"],
-      [CellFlag.EXIT, "+"],
-      [CellFlag.CORRIDOR, "."],
-      [CellFlag.STAIR_UP, "<"],
-      [CellFlag.STAIR_DOWN, ">"]
+      [CellType.WALL, "#"],
+      [CellType.ROOM, "."],
+      [CellType.ROOM_WALL, "#"],
+      [CellType.EXIT, "+"],
+      [CellType.CORRIDOR, "."],
+      [CellType.STAIR_UP, "<"],
+      [CellType.STAIR_DOWN, ">"]
     ]);
     this._map.forEach((coord, cell) => {
       line += symbol.get(cell);
@@ -233,4 +234,6 @@ class Generator {
   }
 }
 
-new Generator().run();
+Generator.CellType = CellType;
+
+module.exports = Generator;
