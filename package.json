@@ -1,8 +1,8 @@
 {
-  "name": "random-dungeon-generator",
+  "name": "rl",
   "version": "1.0.0",
   "description": "",
-  "main": "coord.js",
+  "main": "generator.js",
   "scripts": {
     "test": "mocha"
   },

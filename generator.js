@@ -100,8 +100,8 @@ class Generator {
   }
 
   createStair() {
-    this._map.put(this._deadends.randomPop(), CellType.STAIR_UP);
-    this._map.put(this._deadends.randomPop(), CellType.STAIR_DOWN);
+    this._map.put(Random.pop(this._deadends), CellType.STAIR_UP);
+    this._map.put(Random.pop(this._deadends), CellType.STAIR_DOWN);
   }
 
   updateDeadends() {
@@ -152,7 +152,7 @@ class Generator {
     if (this._map.at(coord) === CellType.WALL) {
       this._map.put(coord, CellType.CORRIDOR);
     }
-    for (const dir of Direction.CROSS.shuffle()) {
+    for (const dir of Random.shffule(Direction.CROSS)) {
       const step2 = coord.plus(dir).plus(dir);
       if (this._map.inbound(step2) && this._map.at(step2) === CellType.WALL) {
         this._map.put(coord.plus(dir), CellType.CORRIDOR);
@@ -167,7 +167,7 @@ class Generator {
         return !this._map.isEdge(coord);
       });
       for (let c = 0; c <= room.randomExitNumber; c++) {
-        const coord = exits.randomChoice();
+        const coord = Random.choice(exits);
         this._map.put(coord, CellType.EXIT);
       }
     }
