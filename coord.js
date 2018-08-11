@@ -23,6 +23,11 @@ class Coord {
   minus(other) {
     return new Coord(this.x - other.x, this.y - other.y);
   }
+
+  distance(other) {
+    const diff = this.minus(other);
+    return Math.max(Math.abs(diff.x), Math.abs(diff.y));
+  }
 }
 Coord._cache = new Map();
 

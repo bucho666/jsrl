@@ -1,4 +1,5 @@
 const Coord = require("../coord.js");
+const Direction = require("../direction.js");
 const assert = require("chai").assert;
 
 describe("Coord", () => {
@@ -21,5 +22,11 @@ describe("Coord", () => {
     const a = new Coord(3, 4);
     const b = new Coord(1, 2);
     assert.equal(a.minus(b), new Coord(2, 2));
+  });
+
+  it("distance", ()=> {
+    const a = new Coord(3, 4);
+    assert.equal(a.distance(new Coord(3, 8)), 4);
+    assert.equal(a.distance(new Coord(8, 8)), 5);
   });
 });
