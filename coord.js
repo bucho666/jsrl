@@ -19,6 +19,10 @@ class Coord {
   plus(other) {
     return new Coord(this.x + other.x, this.y + other.y);
   }
+
+  minus(other) {
+    return new Coord(this.x - other.x, this.y - other.y);
+  }
 }
 Coord._cache = new Map();
 

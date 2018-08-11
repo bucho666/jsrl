@@ -16,4 +16,10 @@ describe("Coord", () => {
     const b = new Coord(3, 4);
     assert.equal(a.plus(b), new Coord(4, 6));
   });
+
+  it("minus",() => {
+    const a = new Coord(3, 4);
+    const b = new Coord(1, 2);
+    assert.equal(a.minus(b), new Coord(2, 2));
+  });
 });
