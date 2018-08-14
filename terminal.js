@@ -124,7 +124,7 @@ class Terminal {
           this._console.close();
           return;
         }
-        this._app.keyEvent(key);
+        this._app.keyEvent(key.sequence, key);
       });
     });
   }

@@ -44,11 +44,11 @@ class FovDemo {
   }
 
   keyEvent(key) {
-    if (KeyMap.has(key.name)) {
-      this.move(KeyMap.get(key.name));
+    if (KeyMap.has(key)) {
+      this.move(KeyMap.get(key));
     }
     this.render();
-    if (key.name === "q" || key.name === "ESCAPE") {
+    if (key === "q" || key === "ESCAPE") {
       process.exit();
     }
   }

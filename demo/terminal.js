@@ -14,41 +14,49 @@ const KeyMap = new Map([
   ["n", Direction.SE]
 ]);
 
+const Colors = [
+  "red",
+  "green",
+  "yellow",
+  "blue",
+  "magenta",
+  "cyan",
+  "white"
+];
+
 class Demo {
   initialize(screen) {
     this._pos = new Coord(1, 1);
     this._screen = screen;
+    this._key = "";
+    this.render();
   }
 
   keyEvent(key) {
-    if (KeyMap.has(key.name)) {
-      this._pos = this._pos.plus(KeyMap.get(key.name));
+    this._key = key;
+    if (KeyMap.has(key)) {
+      this._pos = this._pos.plus(KeyMap.get(key));
     }
+    this.render();
+  }
+
+  render() {
     this._screen.clear();
     this._screen.write("##############################\n");
-    const colors = [
-      "red",
-      "green",
-      "yellow",
-      "blue",
-      "magenta",
-      "cyan",
-      "white"
-    ];
     for (let y = 0; y < 16; y++) {
       this._screen.write("#");
       for (let x = 0; x < 28; x++) {
         if (Random.choice([true, false])) {
           this._screen.write(
             ".",
-            Random.choice(colors),
+            Random.choice(Colors),
             Random.choice([true, false]),
-            Random.choice(colors)
+            Random.choice(Colors)
           );
         } else {
           this._screen.write(
             ".",
-            Random.choice(colors),
+            Random.choice(Colors),
             Random.choice([true, false])
           );
         }
@@ -56,7 +64,7 @@ class Demo {
       this._screen.write("#\n");
     }
     this._screen.write("##############################\n");
-    this._screen.write(`key=${key.name} x=${this._pos.x} y=${this._pos.y}`);
+    this._screen.write(`key=${this._key} x=${this._pos.x} y=${this._pos.y}`);
     this._screen
       .move(this._pos)
       .write("@", "white")
