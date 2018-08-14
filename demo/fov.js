@@ -1,4 +1,4 @@
-const Terminal = require("./terminal.js");
+const Terminal = require("../terminal.js");
 const Coord = require("../coord.js");
 const Direction = require("../direction.js");
 const Fov = require("../fov.js");
@@ -15,13 +15,13 @@ const KeyMap = new Map([
 ]);
 
 class FovDemo {
-  initialize(term) {
-    this._term = term;
+  initialize(screen) {
+    this._screen = screen;
     this._hero = new Coord(1, 1);
     this._map = [
       "#####################",
-      "#...................#",
-      "##.........#........#",
+      "#...........#.......#",
+      "##..................#",
       "#.....#.....#.......#",
       "#...................#",
       "#.....##..#.#.#.....#",
@@ -30,8 +30,12 @@ class FovDemo {
       "#####################"
     ];
     this._fov = new Fov(5, coord => {
-      if (coord.y < 0 || coord.y >= this._map.length
-        || coord.x < 0 || coord.x >= this._map[0].length) {
+      if (
+        coord.y < 0 ||
+        coord.y >= this._map.length ||
+        coord.x < 0 ||
+        coord.x >= this._map[0].length
+      ) {
         return false;
       }
       return this._map[coord.y][coord.x] !== "#";
@@ -40,11 +44,11 @@ class FovDemo {
   }
 
   keyEvent(key) {
-    if (KeyMap.has(key)) {
-      this.move(KeyMap.get(key));
+    if (KeyMap.has(key.name)) {
+      this.move(KeyMap.get(key.name));
     }
     this.render();
-    if (key === "CTRL_C" || key === "q" || key === "ESCAPE") {
+    if (key.name === "q" || key.name === "ESCAPE") {
       process.exit();
     }
   }
@@ -56,18 +60,20 @@ class FovDemo {
   }
 
   render() {
-    this._term.clear();
+    this._screen.clear();
     for (const c of this._fov.compute(this._hero)) {
-      this._term.moveTo(c.x + 1, c.y + 1, this._map[c.y][c.x]);
+      this._screen.move(c).write(this._map[c.y][c.x]);
     }
     this.renderHero();
+    this._screen.flush();
   }
 
   renderHero() {
-    const [x, y] = [this._hero.x + 1, this._hero.y + 1];
-    this._term.moveTo(x, y, "@").moveTo(x, y);
+    this._screen
+      .move(this._hero)
+      .write("@")
+      .move(this._hero);
   }
 }
 
 new Terminal(new FovDemo()).start();
-

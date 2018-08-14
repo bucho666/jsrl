@@ -7,8 +7,12 @@ class Vector {
     this._slope = slope;
   }
 
-  get x() { return this._coord.x; }
-  get y() { return Math.floor(this._coord.y); }
+  get x() {
+    return Math.floor(this._coord.x);
+  }
+  get y() {
+    return Math.floor(this._coord.y);
+  }
 
   plus(other) {
     return new Vector(this._coord.plus(other), this._slope);
@@ -19,20 +23,34 @@ class Vector {
   }
 
   step() {
-    return new Vector( new Coord(this.x + this._slope, this.y + 1), this._slope);
+    return new Vector(new Coord(this.x + this._slope, this.y + 1), this._slope);
   }
 
   toOctant(center, octant) {
     const diff = this.minus(center);
-    switch(octant) {
-    case 0: return this;
-    case 1: return new Vector(center.plus(new Coord(diff.y, diff.x)), this._slope);
-    case 2: return new Vector(center.plus(new Coord(-diff.x, diff.y)), this._slope);
-    case 3: return new Vector(center.plus(new Coord(-diff.y, diff.x)), this._slope);
-    case 4: return new Vector(center.plus(new Coord(diff.x, -diff.y)), this._slope);
-    case 5: return new Vector(center.plus(new Coord(diff.y, -diff.x)), this._slope);
-    case 6: return new Vector(center.plus(new Coord(-diff.x, -diff.y)), this._slope);
-    case 7: return new Vector(center.plus(new Coord(-diff.y, -diff.x)), this._slope);
+    switch (octant) {
+      case 0:
+        return this;
+      case 1:
+        return new Vector(center.plus(new Coord(diff.y, diff.x)), this._slope);
+      case 2:
+        return new Vector(center.plus(new Coord(-diff.x, diff.y)), this._slope);
+      case 3:
+        return new Vector(center.plus(new Coord(-diff.y, diff.x)), this._slope);
+      case 4:
+        return new Vector(center.plus(new Coord(diff.x, -diff.y)), this._slope);
+      case 5:
+        return new Vector(center.plus(new Coord(diff.y, -diff.x)), this._slope);
+      case 6:
+        return new Vector(
+          center.plus(new Coord(-diff.x, -diff.y)),
+          this._slope
+        );
+      case 7:
+        return new Vector(
+          center.plus(new Coord(-diff.y, -diff.x)),
+          this._slope
+        );
     }
   }
 }
@@ -66,7 +84,7 @@ class Fov {
     }
   }
 
-  scanLine(begin, end, octant)  {
+  scanLine(begin, end, octant) {
     let current = begin;
     while (current.x <= end.x) {
       this._visiblePoints.push(current.toOctant(this._start, octant));
@@ -76,7 +94,8 @@ class Fov {
 
   splitView(begin, end, octant) {
     const result = [];
-    let current = begin, lastVisible = null;
+    let current = begin,
+      lastVisible = null;
     while (current.x <= end.x) {
       const visible = this._isVisible(current.toOctant(this._start, octant));
       if (visible && lastVisible === null) {
