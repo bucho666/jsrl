@@ -46,7 +46,17 @@ class Screen {
       this._cells[y] = new Array(size.width);
     }
     this._cursor = { x: 0, y: 0 };
+    this._offset = { x: 0, y: 0 };
     this.clear();
+  }
+
+  setOffset(offset) {
+    this._offset = offset;
+    this._cursor = {x: offset.x, y: offset.y};
+  }
+
+  noOffset() {
+    this.setOffset({ x: 0, y: 0 });
   }
 
   clear() {
@@ -54,18 +64,19 @@ class Screen {
       line.fill(Space);
     }
     this._cursor = { x: 0, y: 0 };
+    this.noOffset();
     return this;
   }
 
   move(coord) {
-    [this._cursor.x, this._cursor.y] = [coord.x, coord.y];
+    [this._cursor.x, this._cursor.y] = [coord.x + this._offset.x, coord.y + this._offset.y];
     return this;
   }
 
   write(text, color = null, isBold = null, bgColor = null) {
     for (const ch of text) {
       if (ch === "\n") {
-        this._cursor.x = 0;
+        this._cursor.x = this._offset.x;
         this._cursor.y++;
         continue;
       }

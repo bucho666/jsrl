@@ -1,27 +1,49 @@
-const Terminal = require("../terminal.js");
-const Coord = require("../coord.js");
-const Direction = require("../direction.js");
-const Matrix = require("../matrix.js");
-const Size = require("../size.js");
-const Generator = require("../generator.js");
-const Random = require("../random.js");
-const Fov = require("../fov.js");
-const Astar = require("../astar.js");
+const RL = require("../rl.js");
 
 const KeyMap = new Map([
-  ["h", Direction.W],
-  ["j", Direction.S],
-  ["k", Direction.N],
-  ["l", Direction.E],
-  ["y", Direction.NW],
-  ["u", Direction.NE],
-  ["b", Direction.SW],
-  ["n", Direction.SE]
+  ["h", RL.Direction.W],
+  ["j", RL.Direction.S],
+  ["k", RL.Direction.N],
+  ["l", RL.Direction.E],
+  ["y", RL.Direction.NW],
+  ["u", RL.Direction.NE],
+  ["b", RL.Direction.SW],
+  ["n", RL.Direction.SE]
 ]);
+
+class Mobile {
+  constructor(symbol, color, coord) {
+    [this._symbol, this._color, this._coord] = [symbol, color, coord];
+  }
+
+  get coord() {
+    return this._coord;
+  }
+
+  movedCoord(dir) {
+    return this._coord.plus(dir);
+  }
+
+  distance(other) {
+    return this._coord.distance(other._coord);
+  }
+
+  isAt(coord) {
+    return this._coord.equal(coord);
+  }
+
+  moveTo(coord) {
+    this._coord = coord;
+  }
+
+  render(screen) {
+    screen.move(this._coord).write(this._symbol, this._color);
+  }
+}
 
 class Dungeon {
   constructor() {
-    this._map = new Matrix(new Size(79, 19));
+    this._map = new RL.Matrix(new RL.Size(39, 13));
   }
 
   at(coord) {
@@ -29,15 +51,15 @@ class Dungeon {
   }
 
   build() {
-    const generator = new Generator(this._map).generate();
+    const generator = new RL.Generator(this._map).generate();
     const CellSymbol = new Map([
-      [Generator.CellType.WALL, "#"],
-      [Generator.CellType.ROOM, "."],
-      [Generator.CellType.ROOM_WALL, "#"],
-      [Generator.CellType.EXIT, "+"],
-      [Generator.CellType.CORRIDOR, " "],
-      [Generator.CellType.STAIR_UP, "<"],
-      [Generator.CellType.STAIR_DOWN, ">"]
+      [RL.Generator.CellType.WALL, "#"],
+      [RL.Generator.CellType.ROOM, "."],
+      [RL.Generator.CellType.ROOM_WALL, "#"],
+      [RL.Generator.CellType.EXIT, "+"],
+      [RL.Generator.CellType.CORRIDOR, " "],
+      [RL.Generator.CellType.STAIR_UP, "<"],
+      [RL.Generator.CellType.STAIR_DOWN, ">"]
     ]);
     generator.forEach((coord, cell) => {
       this._map.put(coord, CellSymbol.get(cell));
@@ -54,28 +76,39 @@ class Dungeon {
     this._map.forEach(coord => {
       if (this._map.at(coord) === ".") opens.push(coord);
     });
-    return Random.choice(opens);
+    return RL.Random.choice(opens);
   }
 
   isOpen(coord) {
+    const terrain = this._map.at(coord);
+    return terrain === "." || terrain === " " || terrain === "+";
+  }
+
+  isVisible(coord) {
     const terrain = this._map.at(coord);
     return terrain === "." || terrain === " ";
   }
 }
 
+// TODO Messsages
 class Game {
   initialize(screen) {
     this._screen = screen;
     this._dungeon = new Dungeon().build();
-    this._hero = this._dungeon.randomRoomSpace();
-    this._monster = this._dungeon.randomRoomSpace();
+    this._hero = new Mobile("@", "white", this._dungeon.randomRoomSpace());
+    this._monsters = new Set();
+    for (let c = 0; c < 7; c++) {
+      this._monsters.add(
+        new Mobile("&", "blue", this._dungeon.randomRoomSpace())
+      );
+    }
     this._memory = new Set();
-    this._fov = new Fov(9, coord => {
+    this._fov = new RL.Fov(9, coord => {
       if (this._dungeon.outbound(coord)) return false;
-      return this._dungeon.isOpen(coord);
+      return this._dungeon.isVisible(coord) && !this.monsterAt(coord);
     });
-    this._astar = new Astar(coord => {
-      return this._dungeon.at(coord) === "#";
+    this._astar = new RL.Astar(coord => {
+      return this._dungeon.isOpen(coord) === false || this.monsterAt(coord);
     });
     this.render();
   }
@@ -90,37 +123,50 @@ class Game {
 
   render() {
     this._screen.clear();
+    this._screen.setOffset({ x: 0, y: 3 });
     for (const c of this._memory) {
       this._screen.move(c).write(this._dungeon.at(c));
     }
-    for (const c of this._fov.compute(this._hero)) {
+    for (const c of this._fov.compute(this._hero.coord)) {
       this._memory.add(c);
       this._screen.move(c).write(this._dungeon.at(c));
     }
-    this._screen
-      .move(this._monster)
-      .write("&", "blue")
-      .move(this._monster);
-    this._screen
-      .move(this._hero)
-      .write("@")
-      .move(this._hero)
-      .flush();
+    for (const monster of this._monsters) {
+      monster.render(this._screen);
+    }
+    this._hero.render(this._screen);
+    this._screen.move(this._hero.coord);
+    this._screen.flush();
   }
 
   move(dir) {
-    const newCoord = this._hero.plus(dir);
+    const newCoord = this._hero.movedCoord(dir);
     if (this._dungeon.at(newCoord) === "#") return;
-    this._hero = newCoord;
+    const monster = this.monsterAt(newCoord);
+    if (monster) {
+      this._monsters.delete(monster);
+      return;
+    }
+    this._hero.moveTo(newCoord);
   }
 
   moveMonster() {
-    if (this._monster.distance(this._hero) > 8) return;
-    const route = this._astar.compute(this._monster, this._hero);
-    if (!route) return;
-    if (route.length === 0) return;
-    this._monster = route.pop();
+    for (const monster of this._monsters) {
+      const route = this._astar.compute(monster.coord, this._hero.coord, 6);
+      if (route.length === 0) continue;
+      const newCoord = route.shift();
+      if (this.monsterAt(newCoord)) return;
+      if (this._hero.coord === newCoord) return;
+      monster.moveTo(newCoord);
+    }
+  }
+
+  monsterAt(coord) {
+    for (const monster of this._monsters) {
+      if (monster.coord === coord) return monster;
+    }
+    return null;
   }
 }
 
-new Terminal(new Game()).start();
+new RL.Terminal(new Game()).start();

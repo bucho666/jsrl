@@ -29,4 +29,12 @@ describe("Coord", () => {
     assert.equal(a.distance(new Coord(3, 8)), 4);
     assert.equal(a.distance(new Coord(8, 8)), 5);
   });
+
+  it ("eaual", ()=>{
+    const c = new Coord(1, 2);
+    assert.isTrue(c.equal({x: 1, y: 2}))
+    assert.isFalse(c.equal({x: 0, y: 2}))
+    assert.isFalse(c.equal({x: 1, y: 3}))
+    assert.isFalse(c.equal({x: 0, y: 3}))
+  })
 });

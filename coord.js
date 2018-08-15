@@ -29,6 +29,10 @@ class Coord {
     return Math.max(Math.abs(diff.x), Math.abs(diff.y));
   }
 
+  equal(other) {
+    return other.x === this._x && other.y === this._y;
+  }
+
   toLine(to) {
     const [dx, dy] = [Math.abs(to.x - this.x), Math.abs(to.y - this.y)];
     const [sx, sy] = [(this.x < to.x) ? 1 : -1, (this.y < to.y) ? 1 : -1];

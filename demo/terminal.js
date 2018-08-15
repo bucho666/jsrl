@@ -42,8 +42,9 @@ class Demo {
 
   render() {
     this._screen.clear();
+    this._screen.setOffset({x: 2, y:2});
     this._screen.write("##############################\n");
-    for (let y = 0; y < 16; y++) {
+    for (let y = 0; y < 14; y++) {
       this._screen.write("#");
       for (let x = 0; x < 28; x++) {
         if (Random.choice([true, false])) {
