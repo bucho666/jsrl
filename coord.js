@@ -28,6 +28,26 @@ class Coord {
     const diff = this.minus(other);
     return Math.max(Math.abs(diff.x), Math.abs(diff.y));
   }
+
+  toLine(to) {
+    const [dx, dy] = [Math.abs(to.x - this.x), Math.abs(to.y - this.y)];
+    const [sx, sy] = [(this.x < to.x) ? 1 : -1, (this.y < to.y) ? 1 : -1];
+    let [x, y, error] = [this.x, this.y, dx - dy];
+    const line = [];
+    while (x != to.x || y != to.y) {
+      const error2 = error * 2;
+      if (error2 > -dy) {
+        error -= dy;
+        x += sx;
+      }
+      if (error2 < dx) {
+        error += dx;
+        y += sy;
+      }
+      line.push(new Coord(x, y));
+    }
+    return line;
+  }
 }
 Coord._cache = new Map();
 

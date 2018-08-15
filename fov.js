@@ -8,10 +8,10 @@ class Vector {
   }
 
   get x() {
-    return Math.floor(this._coord.x);
+    return Math.ceil(this._coord.x);
   }
   get y() {
-    return Math.floor(this._coord.y);
+    return Math.ceil(this._coord.y);
   }
 
   plus(other) {
