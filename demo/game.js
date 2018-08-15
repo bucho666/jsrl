@@ -24,7 +24,9 @@ class Dungeon {
     this._map = new Matrix(new Size(79, 19));
   }
 
-  at(coord) { return this._map.at(coord); }
+  at(coord) {
+    return this._map.at(coord);
+  }
 
   build() {
     const generator = new Generator(this._map).generate();
@@ -75,6 +77,7 @@ class Game {
     this._astar = new Astar(coord => {
       return this._dungeon.at(coord) === "#";
     });
+    this.render();
   }
 
   keyEvent(key) {
@@ -82,6 +85,10 @@ class Game {
       this.move(KeyMap.get(key));
       this.moveMonster();
     }
+    this.render();
+  }
+
+  render() {
     this._screen.clear();
     for (const c of this._memory) {
       this._screen.move(c).write(this._dungeon.at(c));
@@ -90,8 +97,15 @@ class Game {
       this._memory.add(c);
       this._screen.move(c).write(this._dungeon.at(c));
     }
-    this._screen.move(this._monster).write("&", "blue").move(this._monster);
-    this._screen.move(this._hero).write("@").move(this._hero).flush();
+    this._screen
+      .move(this._monster)
+      .write("&", "blue")
+      .move(this._monster);
+    this._screen
+      .move(this._hero)
+      .write("@")
+      .move(this._hero)
+      .flush();
   }
 
   move(dir) {
