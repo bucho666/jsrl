@@ -68,6 +68,10 @@ class Screen {
     return this;
   }
 
+  clearLine(y) {
+    this._cells[y].fill(Space);
+  }
+
   move(coord) {
     [this._cursor.x, this._cursor.y] = [coord.x + this._offset.x, coord.y + this._offset.y];
     return this;

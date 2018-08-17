@@ -66,6 +66,9 @@ class Demo {
     }
     this._screen.write("##############################\n");
     this._screen.write(`key=${this._key} x=${this._pos.x} y=${this._pos.y}`);
+    this._screen.clearLine(5);
+    this._screen.clearLine(7);
+    this._screen.clearLine(9);
     this._screen
       .move(this._pos)
       .write("@", "white")

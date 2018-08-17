@@ -8,12 +8,77 @@ const KeyMap = new Map([
   ["y", RL.Direction.NW],
   ["u", RL.Direction.NE],
   ["b", RL.Direction.SW],
-  ["n", RL.Direction.SE]
+  ["n", RL.Direction.SE],
+  [".", new RL.Coord(0, 0)]
 ]);
 
+class AbilityPoint {
+  constructor(value) {
+    [this._max, this._current] = [value, value];
+  }
+
+  plus(value) {
+    this.set((this._current += value));
+  }
+
+  minus(value) {
+    this.set((this._current -= value));
+  }
+
+  set(value) {
+    this._current = value > this._max ? this._max : value < 0 ? 0 : value;
+  }
+
+  get value() {
+    return this._current;
+  }
+
+  get max() {
+    return this._max;
+  }
+
+  toString() {
+    return `${this._current} / ${this._max}`;
+  }
+}
+
+class Ability {
+  constructor(ability) {
+    this._hp = new AbilityPoint(ability.hp);
+    this._hit = ability.hit;
+    this._ac = ability.ac;
+    this._damageDice = ability.damageDice;
+  }
+
+  get hp() {
+    return this._hp;
+  }
+
+  toString() {
+    return `hp: ${this._hp.toString()}`;
+  }
+
+  attack(victim) {
+    const hit = new RL.Dice("1d20").roll() - this._hit;
+    if (victim._ac <= hit) return { isHit: false };
+    const damage = this.damage;
+    victim.hp.minus(damage);
+    return { isHit: true, damage: damage };
+  }
+
+  get damage() {
+    return this._damageDice.roll();
+  }
+}
+
 class Mobile {
-  constructor(symbol, color, coord) {
-    [this._symbol, this._color, this._coord] = [symbol, color, coord];
+  constructor(symbol, color, coord, ability) {
+    [this._symbol, this._color, this._coord, this._ability] = [
+      symbol,
+      color,
+      coord,
+      new Ability(ability)
+    ];
   }
 
   get coord() {
@@ -39,11 +104,35 @@ class Mobile {
   render(screen) {
     screen.move(this._coord).write(this._symbol, this._color);
   }
+
+  get ability() {
+    return this._ability;
+  }
+
+  attack(victim) {
+    return this._ability.attack(victim.ability);
+  }
+
+  isDead() {
+    return this.ability.hp.value <= 0;
+  }
+}
+
+class Monster extends Mobile {
+  constructor(symbol, color, coord, ability) {
+    super(symbol, color, coord, ability);
+    this.destination = null;
+  }
 }
 
 class Dungeon {
   constructor() {
     this._map = new RL.Matrix(new RL.Size(39, 13));
+    this._upStair = null;
+  }
+
+  get upStair() {
+    return this._upStair;
   }
 
   at(coord) {
@@ -63,6 +152,9 @@ class Dungeon {
     ]);
     generator.forEach((coord, cell) => {
       this._map.put(coord, CellSymbol.get(cell));
+      if (cell === RL.Generator.CellType.STAIR_UP) {
+        this._upStair = coord;
+      }
     });
     return this;
   }
@@ -90,16 +182,63 @@ class Dungeon {
   }
 }
 
-// TODO Messsages
+class Messages {
+  constructor(size) {
+    this._isUpdate = false;
+    this._messages = Array(size);
+    this._messages.fill("");
+  }
+
+  add(message) {
+    this._isUpdate = true;
+    this.pushMessage(message);
+  }
+
+  pushMessage(message) {
+    this._messages.push(message);
+    this._messages.shift();
+  }
+
+  update() {
+    if (this._isUpdate) {
+      this._isUpdate = false;
+      return;
+    }
+    this.pushMessage("");
+  }
+
+  render(screen, y) {
+    screen.move({ x: 0, y: y });
+    for (const message of this._messages) {
+      screen.clearLine(y++);
+      screen.write(`${message}\n`);
+    }
+  }
+}
+
+// TODO next floor
+// TODO mask monster
 class Game {
   initialize(screen) {
     this._screen = screen;
     this._dungeon = new Dungeon().build();
-    this._hero = new Mobile("@", "white", this._dungeon.randomRoomSpace());
+    this._messages = new Messages(3);
+    this._hero = new Mobile("@", "white", this._dungeon.upStair, {
+      hp: 12,
+      hit: 3,
+      ac: 3,
+      damageDice: new RL.Dice("1d8")
+    });
     this._monsters = new Set();
+    const hitDice = new RL.Dice("1d6");
     for (let c = 0; c < 7; c++) {
       this._monsters.add(
-        new Mobile("&", "blue", this._dungeon.randomRoomSpace())
+        new Monster("&", "blue", this._dungeon.randomRoomSpace(), {
+          hp: hitDice.roll(),
+          hit: 0,
+          ac: 8,
+          damageDice: hitDice
+        })
       );
     }
     this._memory = new Set();
@@ -108,21 +247,26 @@ class Game {
       return this._dungeon.isVisible(coord) && !this.monsterAt(coord);
     });
     this._astar = new RL.Astar(coord => {
-      return this._dungeon.isOpen(coord) === false || this.monsterAt(coord);
+      return (
+        this._dungeon.isOpen(coord) === false || this.monsterAt(coord) !== null
+      );
     });
     this.render();
   }
 
   keyEvent(key) {
+    if (this._hero.isDead()) return;
     if (KeyMap.has(key)) {
       this.move(KeyMap.get(key));
-      this.moveMonster();
+      this.moveMonsters();
     }
+    this._messages.update();
     this.render();
   }
 
   render() {
     this._screen.clear();
+    this._messages.render(this._screen, 0);
     this._screen.setOffset({ x: 0, y: 3 });
     for (const c of this._memory) {
       this._screen.move(c).write(this._dungeon.at(c));
@@ -134,6 +278,7 @@ class Game {
     for (const monster of this._monsters) {
       monster.render(this._screen);
     }
+    this._screen.move({ x: 0, y: 13 }).write(this._hero.ability.toString());
     this._hero.render(this._screen);
     this._screen.move(this._hero.coord);
     this._screen.flush();
@@ -144,20 +289,70 @@ class Game {
     if (this._dungeon.at(newCoord) === "#") return;
     const monster = this.monsterAt(newCoord);
     if (monster) {
-      this._monsters.delete(monster);
+      this.attackTo(monster);
       return;
     }
     this._hero.moveTo(newCoord);
   }
 
-  moveMonster() {
+  attackTo(monster) {
+    const attack = this._hero.attack(monster);
+    if (!attack.isHit) {
+      this._messages.add("miss!");
+      return;
+    }
+    if (monster.isDead()) {
+      this._messages.add("killed monster!");
+      this._monsters.delete(monster);
+    } else {
+      this._messages.add(`hit! damage ${attack.damage}`);
+    }
+  }
+
+  attackFrom(monster) {
+    const attack = monster.attack(this._hero);
+    if (!attack.isHit) {
+      this._messages.add("dodge the attack!");
+      return;
+    }
+    if (this._hero.isDead()) {
+      this._messages.add("you dead ... GAMEOVER");
+      return;
+    }
+    this._messages.add(`you damage ${attack.damage}`);
+  }
+
+  moveMonsters() {
     for (const monster of this._monsters) {
-      const route = this._astar.compute(monster.coord, this._hero.coord, 6);
-      if (route.length === 0) continue;
-      const newCoord = route.shift();
-      if (this.monsterAt(newCoord)) return;
-      if (this._hero.coord === newCoord) return;
-      monster.moveTo(newCoord);
+      this.moveMonster(monster);
+    }
+  }
+
+  moveMonster(monster) {
+    if (monster.coord.distance(this._hero.coord) === 1) {
+      monster.destination = this._hero.coord;
+      this.attackFrom(monster);
+      return;
+    }
+    let route = monster.coord.toLine(this._hero.coord);
+    route.pop();
+    if (route.every(coord => this._dungeon.isVisible(coord))) {
+      monster.destination = this._hero.coord;
+    } else {
+      if (monster.destination === null) return;
+      route = monster.coord.toLine(monster.destination);
+    }
+    if (route.length === 0) return;
+    let newCoord = route.shift();
+    if (this.monsterAt(newCoord)) {
+      const route = this._astar.compute(monster.coord, this._hero.coord, 7);
+      if (route.length === 0) return;
+      newCoord = route.shift();
+    }
+    monster.moveTo(newCoord);
+    if (monster.destination === newCoord) {
+      monster.destination = null;
+      this._messages.add("on dest");
     }
   }
 

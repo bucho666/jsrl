@@ -107,7 +107,7 @@ class Astar {
     this._opens.add(new Node(start, null, this._goal));
     while (!this._opens.isEmpty()) {
       const node = this._opens.popLowestCostNode();
-      if (node.distance === 1) return node.makeRoute();
+      if (node.distance === 0) return node.makeRoute();
       for (const side of node.aroundNode(this._goal)) {
         if (this._blockAt(side.coord)) continue;
         if (this._limit > 0 && side.cost > this._limit) continue;
